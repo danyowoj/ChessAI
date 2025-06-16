@@ -81,6 +81,33 @@ function showGameResult() {
     }
 }
 
+function suggestMove() {
+    if (game.game_over()) return;
+
+    fetch('/bestmove', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fen: game.fen() })
+    })
+    .then(response => {
+        if (!response.ok) throw new Error('Network response was not ok');
+        return response.json();
+    })
+    .then(data => {
+        if (!data.bestmove) return;
+
+        const from = data.bestmove.slice(0, 2);
+        const to = data.bestmove.slice(2, 4);
+
+        removeGreySquares();
+        $(`#board .square-${from}`).addClass('suggested-move');
+        $(`#board .square-${to}`).addClass('suggested-move');
+    })
+    .catch(error => {
+        console.error('Error getting suggested move:', error);
+    });
+}
+
 const config = {
     draggable: true,
     position: 'start',
@@ -105,6 +132,9 @@ $(document).ready(function () {
         $('#resultModal').show();
     });
     $('#confirmNo').on('click', () => $('#confirmResign').hide());
+
+    // Кнопка "предложить ход"
+    $('#suggestBtn').on('click', suggestMove);
 });
 
 window.addEventListener('resize', () => {
