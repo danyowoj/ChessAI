@@ -128,7 +128,8 @@ $(document).ready(function () {
     $('#confirmYes').on('click', () => {
         $('#confirmResign').hide();
         const loser = game.turn() === 'w' ? 'Белые' : 'Чёрные';
-        $('#resultText').text(`${loser} сдались.`);
+        const winner = game.turn() === 'w' ? 'Чёрные' : 'Белые';
+        $('#resultText').text(`${loser} сдались. ${winner} победили!`);
         $('#resultModal').show();
     });
     $('#confirmNo').on('click', () => $('#confirmResign').hide());
