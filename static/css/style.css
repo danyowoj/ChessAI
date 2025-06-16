@@ -6,11 +6,11 @@
 }
 
 #board.white-turn {
-    box-shadow: 0 0 15px 5px #FFFFFF;
+    box-shadow: 0 0 15px 5px rgba(255, 255, 255, 0.7);
 }
 
 #board.black-turn {
-    box-shadow: 0 0 15px 5px #000000;
+    box-shadow: 0 0 15px 5px rgba(0, 0, 0, 0.7);
 }
 
 .modal {
@@ -32,4 +32,8 @@
     border-radius: 10px;
     text-align: center;
     box-shadow: 0 0 10px black;
+}
+
+.suggested-move {
+    background: #B2BEB5 !important;
 }

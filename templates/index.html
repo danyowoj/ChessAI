@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Chess</title>
+    <title>Chess Advisor</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='chessboard/chessboard-1.0.0.min.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
@@ -12,13 +12,14 @@
     </style>
 </head>
 <body>
-    <h1 style="text-align: center;">Chess</h1>
+    <h1 style="text-align: center;">Chess Advisor</h1>
 
     <div id="board" style="width: 100%; max-width: 500px; margin: 0 auto;"></div>
     <div id="status" style="text-align: center; margin-top: 10px; font-size: 18px;"></div>
 
     <div style="text-align: center; margin-top: 20px;">
         <button id="resignBtn">Сдаться</button>
+        <button id="suggestBtn">Предложить ход</button>
     </div>
 
     <!-- Модальное окно подтверждения -->
