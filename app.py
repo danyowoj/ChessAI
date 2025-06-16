@@ -1,7 +1,9 @@
 from flask import Flask, render_template, request, jsonify
 from stockfish import Stockfish
 
-app = Flask(__name__)
+app = Flask(__name__,
+            static_folder='static',
+            template_folder='.')
 
 stockfish = Stockfish(path="/usr/games/stockfish")
 stockfish.set_depth(20)
