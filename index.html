@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Chess Advisor</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='chessboard/chessboard-1.0.0.min.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <title>Chess AI</title>
+    <link rel="stylesheet" href="/static/chessboard/chessboard-1.0.0.min.css">
+    <link rel="stylesheet" href="/static/css/style.css">
     <style>
     body {
         background-color: #B2BEB5;
@@ -12,7 +12,7 @@
     </style>
 </head>
 <body>
-    <h1 style="text-align: center;">Chess Advisor</h1>
+    <h1 style="text-align: center;">Chess AI</h1>
 
     <div id="board" style="width: 100%; max-width: 500px; margin: 0 auto;"></div>
     <div id="status" style="text-align: center; margin-top: 10px; font-size: 18px;"></div>
@@ -54,7 +54,7 @@
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.12.0/chess.min.js"></script>
-    <script src="{{ url_for('static', filename='chessboard/chessboard-1.0.0.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/board.js') }}"></script>
+    <script src="/static/chessboard/chessboard-1.0.0.min.js"></script>
+    <script src="/static/js/board.js"></script>
 </body>
 </html>
