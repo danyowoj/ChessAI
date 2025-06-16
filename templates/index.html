@@ -39,6 +39,19 @@
         </div>
     </div>
 
+    <!-- Модальное окно повышения фигуры -->
+    <div id="promotionModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <p>Выберите фигуру для превращения:</p>
+            <div class="promotion-options">
+                <img src="/static/chessboard/img/chesspieces/wikipedia/wQ.png" data-piece="q" class="promotion-piece">
+                <img src="/static/chessboard/img/chesspieces/wikipedia/wR.png" data-piece="r" class="promotion-piece">
+                <img src="/static/chessboard/img/chesspieces/wikipedia/wB.png" data-piece="b" class="promotion-piece">
+                <img src="/static/chessboard/img/chesspieces/wikipedia/wN.png" data-piece="n" class="promotion-piece">
+            </div>
+        </div>
+    </div>
+
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.12.0/chess.min.js"></script>
     <script src="{{ url_for('static', filename='chessboard/chessboard-1.0.0.min.js') }}"></script>
