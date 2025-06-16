@@ -1,5 +1,6 @@
 let board = null;
 let game = new Chess();
+let pendingPromotion = null; // Будет хранить информацию о превращении
 
 function updateStatus() {
     const statusEl = document.getElementById('status');
@@ -50,38 +51,81 @@ function onDrop(source, target) {
     removeGreySquares();
     $('.suggested-move').removeClass('suggested-move');
 
-    try {
-        const move = game.move({
-            from: source,
-            to: target,
-            promotion: 'q' // Всегда превращаем в ферзя для простоты
-        });
+    // Проверяем, является ли ход превращением пешки
+    const promotionMove = isPromotionMove(source, target);
 
-        if (!move) {
-            console.log("Недопустимый ход игрока");
-            return 'snapback';
-        }
+    if (promotionMove && game.turn() === 'w') {
+        // Для игрока показываем модальное окно выбора
+        pendingPromotion = { from: source, to: target };
+        showPromotionModal();
+        return 'snapback'; // Временно возвращаем фигуру
+    } else if (promotionMove && game.turn() === 'b') {
+        // Для компьютера выбираем ферзя
+        return completeMove(source, target, 'q');
+    } else {
+        // Обычный ход
+        return completeMove(source, target);
+    }
+}
 
-        board.position(game.fen());
-        updateStatus();
+function isPromotionMove(source, target) {
+    const piece = game.get(source);
+    if (!piece || piece.type !== 'p') return false;
 
-        if (game.game_over()) {
-            showGameResult();
-            return;
-        }
+    // Для белых пешек - 8-я горизонталь, для черных - 1-я
+    return (piece.color === 'w' && target[1] === '8') ||
+           (piece.color === 'b' && target[1] === '1');
+}
 
-        // Делаем ход компьютера через небольшую задержку
+function completeMove(source, target, promotion = 'q') {
+    const move = game.move({
+        from: source,
+        to: target,
+        promotion: promotion
+    });
+
+    if (!move) return 'snapback';
+
+    board.position(game.fen());
+    updateStatus();
+
+    if (game.game_over()) {
+        showGameResult();
+    } else if (game.turn() === 'b') {
+        // Делаем ход компьютера через небольшую случайную задержку
         const minDelay = 100; // минимальная задержка
         const maxDelay = 1000; // максимальная задержка
         const randomDelay = Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay;
 
         setTimeout(makeComputerMove, randomDelay);
-
-    } catch (e) {
-        console.error("Ошибка при ходе игрока:", e);
-        return 'snapback';
     }
+
+    return true;
 }
+
+function showPromotionModal() {
+    $('#promotionModal').show();
+
+    // Устанавливаем цвет фигур в зависимости от текущего игрока
+    const color = game.turn() === 'w' ? 'w' : 'b';
+    $('.promotion-piece').each(function() {
+        const piece = $(this).data('piece');
+        $(this).attr('src', `/static/chessboard/img/chesspieces/wikipedia/${color}${piece.toUpperCase()}.png`);
+    });
+}
+
+// Обработчики выбора фигуры
+$(document).ready(function() {
+    $('.promotion-piece').on('click', function() {
+        const piece = $(this).data('piece');
+        $('#promotionModal').hide();
+
+        if (pendingPromotion) {
+            completeMove(pendingPromotion.from, pendingPromotion.to, piece);
+            pendingPromotion = null;
+        }
+    });
+});
 
 async function makeComputerMove() {
     if (game.game_over()) return;
