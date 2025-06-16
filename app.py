@@ -1,5 +1,4 @@
 from flask import Flask, render_template, request, jsonify
-import chess
 from stockfish import Stockfish
 
 app = Flask(__name__)
