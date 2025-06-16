@@ -3,7 +3,7 @@ from stockfish import Stockfish
 
 app = Flask(__name__)
 
-stockfish = Stockfish(path="/usr/games/stockfish")
+stockfish = Stockfish(path="stockfish")
 stockfish.set_depth(20)
 stockfish.set_skill_level(20)
 
@@ -23,6 +23,9 @@ else:
 def index():
     return render_template('index.html')
 
+@app.route('/app')
+def app_index():
+    return render_template('index.html')
 
 @app.route('/bestmove', methods=['POST'])
 def bestmove():
