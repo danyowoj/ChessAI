@@ -1,0 +1,39 @@
+#board {
+    height: 500px;
+    max-width: 500px;
+    margin: 0 auto;
+    transition: box-shadow 0.3s ease;
+}
+
+#board.white-turn {
+    box-shadow: 0 0 15px 5px rgba(255, 255, 255, 0.7);
+}
+
+#board.black-turn {
+    box-shadow: 0 0 15px 5px rgba(0, 0, 0, 0.7);
+}
+
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0,0,0,0.5);
+    z-index: 10;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content {
+    background-color: white;
+    padding: 20px 30px;
+    border-radius: 10px;
+    text-align: center;
+    box-shadow: 0 0 10px black;
+}
+
+.suggested-move {
+    background: #B2BEB5 !important;
+}
