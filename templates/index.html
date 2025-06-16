@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Chess AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='chessboard/chessboard-1.0.0.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="{{ url_for('static', filename='chessboard/chessboard-1.0.0.min.js') }}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chess.js@0.12.0/chess.min.js"></script>
+</head>
+<body>
+    <h1>Chess AI</h1>
+    <div id="board" style="width: 100%; max-width: 500px; margin: 0 auto;"></div>
+    <div id="status"></div>
+
+    <div id="gameOverModal" class="modal">
+    <div class="modal-content">
+        <h2 id="gameResultText"></h2>
+        <button id="restartButton">Новая игра</button>
+    </div>
+</div>
+
+    <script src="{{ url_for('static', filename='js/board.js') }}"></script>
+</body>
+</html>
