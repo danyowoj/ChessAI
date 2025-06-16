@@ -4,7 +4,7 @@ from stockfish import Stockfish
 app = Flask(__name__)
 
 stockfish = Stockfish(path="/usr/games/stockfish")
-stockfish.set_depth(15)
+stockfish.set_depth(20)
 stockfish.set_skill_level(20)
 
 if not stockfish._is_ready():

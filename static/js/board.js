@@ -71,7 +71,11 @@ function onDrop(source, target) {
         }
 
         // Делаем ход компьютера через небольшую задержку
-        setTimeout(makeComputerMove, 100);
+        const minDelay = 100; // минимальная задержка
+        const maxDelay = 1000; // максимальная задержка
+        const randomDelay = Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay;
+
+        setTimeout(makeComputerMove, randomDelay);
 
     } catch (e) {
         console.error("Ошибка при ходе игрока:", e);
