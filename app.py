@@ -1,68 +1,58 @@
-import os
 from flask import Flask, render_template, request, jsonify
 from stockfish import Stockfish
 
 app = Flask(__name__)
 
+stockfish = Stockfish(path="stockfish")
+stockfish.set_depth(20)
+stockfish.set_skill_level(20)
 
-# Определение пути к Stockfish
-def get_stockfish_path():
-    # Попробуем найти stockfish в разных местах
-    paths = [
-        os.path.join(os.path.dirname(__file__), 'bin', 'stockfish'),
-        '/app/bin/stockfish',  # Для yhub.net
-        '/usr/bin/stockfish',
-        '/usr/games/stockfish',
-        '/usr/local/bin/stockfish'
-    ]
-
-    for path in paths:
-        if os.path.exists(path):
-            return path
-
-    return 'stockfish'  # Попробуем найти в PATH
-
-
-try:
-    stockfish_path = get_stockfish_path()
-    print(f"Using Stockfish at: {stockfish_path}")
-    stockfish = Stockfish(path=stockfish_path)
-    stockfish.set_depth(15)
-    stockfish.set_skill_level(20)
-except Exception as e:
-    print(f"Error initializing Stockfish: {str(e)}")
-    stockfish = None
-
+if not stockfish._is_ready():
+    print("Ошибка: Stockfish не готов!")
+    # Попробуем альтернативный путь
+    try:
+        stockfish = Stockfish(path="stockfish")  # Попробовать путь по умолчанию
+        print("Использован путь по умолчанию")
+    except:
+        print("Не удалось инициализировать Stockfish")
+        exit(1)
+else:
+    print("Stockfish успешно инициализирован")
 
 @app.route('/')
 def index():
     return render_template('index.html')
 
+@app.route('/app')
+def app_index():
+    return render_template('index.html')
 
 @app.route('/bestmove', methods=['POST'])
 def bestmove():
-    if not stockfish:
-        return jsonify({'error': 'Stockfish not available'}), 500
-
     try:
         data = request.get_json()
         fen = data['fen']
+        print(f"Получен FEN: {fen}")  # Логирование
 
         if not stockfish.is_fen_valid(fen):
+            print("Неверный FEN")
             return jsonify({'error': 'Invalid FEN'}), 400
 
         stockfish.set_fen_position(fen)
+        print("FEN установлен успешно")
+
         move = stockfish.get_best_move()
+        print(f"Лучший ход: {move}")
 
         if not move:
+            print("Stockfish не вернул ход")
             return jsonify({'error': 'No move available'}), 400
 
         return jsonify({'bestmove': move})
 
     except Exception as e:
+        print(f"Ошибка в bestmove: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
-
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(debug=True)
