@@ -1,26 +1,46 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Chess AI</title>
+    <title>Chess</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='chessboard/chessboard-1.0.0.min.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <script src="{{ url_for('static', filename='chessboard/chessboard-1.0.0.min.js') }}"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chess.js@0.12.0/chess.min.js"></script>
+    <style>
+    body {
+        background-color: #B2BEB5;
+    }
+    </style>
 </head>
 <body>
-    <h1>Chess AI</h1>
+    <h1 style="text-align: center;">Chess</h1>
+
     <div id="board" style="width: 100%; max-width: 500px; margin: 0 auto;"></div>
-    <div id="status"></div>
+    <div id="status" style="text-align: center; margin-top: 10px; font-size: 18px;"></div>
 
-    <div id="gameOverModal" class="modal">
-    <div class="modal-content">
-        <h2 id="gameResultText"></h2>
-        <button id="restartButton">Новая игра</button>
+    <div style="text-align: center; margin-top: 20px;">
+        <button id="resignBtn">Сдаться</button>
     </div>
-</div>
 
+    <!-- Модальное окно подтверждения -->
+    <div id="confirmResign" class="modal" style="display: none;">
+        <div class="modal-content">
+            <p>Вы уверены, что хотите сдаться?</p>
+            <button id="confirmYes">Да</button>
+            <button id="confirmNo">Нет</button>
+        </div>
+    </div>
+
+    <!-- Модальное окно результата -->
+    <div id="resultModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <p id="resultText"></p>
+            <button onclick="location.reload()">Новая игра</button>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.12.0/chess.min.js"></script>
+    <script src="{{ url_for('static', filename='chessboard/chessboard-1.0.0.min.js') }}"></script>
     <script src="{{ url_for('static', filename='js/board.js') }}"></script>
 </body>
 </html>
