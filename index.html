@@ -52,6 +52,24 @@
         </div>
     </div>
 
+    <div class="difficulty-controls" style="text-align: center; margin: 15px 0;">
+        <button onclick="setDifficulty('easy')">Легко</button>
+        <button onclick="setDifficulty('medium')">Средне</button>
+        <button onclick="setDifficulty('hard')">Сложно</button>
+    </div>
+
+    <script>
+    function setDifficulty(level) {
+        fetch('/set_difficulty', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ level: level })
+        }).then(response => {
+            alert(`Установлен уровень: ${level}`);
+        });
+    }
+    </script>
+
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.12.0/chess.min.js"></script>
     <script src="/static/chessboard/chessboard-1.0.0.min.js"></script>

@@ -55,3 +55,17 @@
 .promotion-piece:hover {
     transform: scale(1.1);
 }
+
+.difficulty-controls button {
+    padding: 8px 15px;
+    margin: 0 5px;
+    background: #4a6ea9;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.difficulty-controls button:hover {
+    background: #3a5a8f;
+}
