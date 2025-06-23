@@ -52,10 +52,17 @@
         </div>
     </div>
 
-    <div class="difficulty-controls" style="text-align: center; margin: 15px 0;">
-        <button onclick="setDifficulty('easy')">Легко</button>
-        <button onclick="setDifficulty('medium')">Средне</button>
-        <button onclick="setDifficulty('hard')">Сложно</button>
+    <div style="text-align: center; margin-top: 10px;">
+        <button id="switchSidesBtn">Сменить сторону</button>
+    </div>
+
+    <!-- Модальное окно подтверждения смены стороны -->
+    <div id="confirmSwitch" class="modal" style="display: none;">
+        <div class="modal-content">
+            <p>Вы уверены, что хотите сменить сторону?</p>
+            <button id="confirmSwitchYes">Да</button>
+            <button id="confirmSwitchNo">Нет</button>
+        </div>
     </div>
 
     <script>

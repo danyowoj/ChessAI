@@ -1,96 +1,57 @@
 from flask import Flask, render_template, request, jsonify
-from stockfish import Stockfish
+import chess
+import chess.engine
+import os
 
-app = Flask(__name__,
-            static_folder='static',
-            template_folder='.')
+app = Flask(__name__, static_folder='static', template_folder='.')
 
-# Инициализация Stockfish с максимальными параметрами
+# Путь к бинарному файлу Stockfish
+STOCKFISH_PATH = os.path.join("stockfish", "stockfish-ubuntu-x86-64-avx2")  # Укажи свой путь здесь
+
 try:
-    # Инициализация Stockfish с совместимыми параметрами
-    stockfish = Stockfish(
-        path="/usr/games/stockfish",
-        depth=22,
-        parameters={
-            "Threads": 4,  # Использовать 4 ядра
-            "Hash": 2048,  # 2GB памяти
-            "Skill Level": 20,  # Максимальная сложность (0-20)
-            "UCI_LimitStrength": "false",
-            "UCI_Elo": 3000,  # Максимальный рейтинг
-            "Slow Mover": 100,  # Интенсивность анализа
-            "Contempt": 0,  # Нейтральный стиль игры
-            "Minimum Thinking Time": 1000  # Минимум 1 секунда на ход
-        }
-    )
-
-    # Альтернативный способ включения NNUE (если доступен)
-    if hasattr(stockfish, 'set_nnue'):
-        stockfish.set_nnue("true")
-        print("NNUE используется")
-
-    print("Stockfish успешно инициализирован с параметрами:")
-    print(stockfish.get_parameters())  # Выводим текущие параметры
-
+    engine = chess.engine.SimpleEngine.popen_uci(STOCKFISH_PATH)
+    print("✅ Stockfish с NNUE запущен успешно.")
 except Exception as e:
-    print(f"Ошибка инициализации Stockfish: {str(e)}")
-    # Попробуем более простую инициализацию
-    try:
-        stockfish = Stockfish(path="stockfish")
-        stockfish.set_depth(20)
-        stockfish.set_skill_level(20)
-        print("Использована упрощенная инициализация")
-    except:
-        print("Не удалось инициализировать Stockfish")
-        exit(1)
+    print(f"❌ Ошибка запуска Stockfish: {e}")
+    engine = None
 
 @app.route('/')
 def index():
     return render_template('index.html')
 
-
 @app.route('/bestmove', methods=['POST'])
 def bestmove():
     try:
         data = request.get_json()
-        fen = data['fen']
+        fen = data.get('fen')
+        if not fen:
+            return jsonify({'error': 'FEN not provided'}), 400
 
-        if not stockfish.is_fen_valid(fen):
-            return jsonify({'error': 'Invalid FEN'}), 400
+        board = chess.Board(fen)
+        if board.is_game_over():
+            return jsonify({'error': 'Game already over'}), 400
 
-        stockfish.set_fen_position(fen)
+        # Максимально сильный вызов Stockfish: анализ на глубине 30
+        limit = chess.engine.Limit(depth=30)  # или: Limit(time=5.0)
+        result = engine.play(board, limit)
 
-        # Используем продвинутый метод с контролем времени
-        move = stockfish.get_best_move_time(2000)  # 2 секунды на анализ
+        move = result.move
+        info = engine.analyse(board, limit)
 
-        if not move:
-            return jsonify({'error': 'No move available'}), 400
+        print(f"FEN: {fen}")
+        print(f"Лучший ход: {move}")
+        print(f"Оценка: {info.get('score')}")
 
-        return jsonify({'bestmove': move})
+        return jsonify({'bestmove': move.uci()})
 
     except Exception as e:
-        print(f"Ошибка в bestmove: {str(e)}")
+        print(f"Ошибка при анализе хода: {e}")
         return jsonify({'error': str(e)}), 500
 
+@app.teardown_appcontext
+def shutdown_engine(exception=None):
+    if engine:
+        engine.quit()
 
-@app.route('/set_difficulty', methods=['POST'])
-def set_difficulty():
-    """Эндпоинт для динамического изменения сложности"""
-    level = request.json.get('level', 'max')
-
-    if level == 'easy':
-        params = {"Skill Level": 5, "UCI_LimitStrength": "true", "UCI_Elo": 1200}
-    elif level == 'medium':
-        params = {"Skill Level": 15, "UCI_LimitStrength": "false"}
-    else:  # max/hard
-        params = {
-            "Skill Level": 20,
-            "UCI_LimitStrength": "false",
-            "Threads": 4,
-            "Hash": 2048
-        }
-
-    stockfish.update_engine_parameters(params)
-    return jsonify({'status': f'Установлен уровень: {level}'})
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run(debug=True)
