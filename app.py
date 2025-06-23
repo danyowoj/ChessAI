@@ -5,12 +5,16 @@ import os
 
 app = Flask(__name__, static_folder='static', template_folder='.')
 
-# Путь к бинарному файлу Stockfish
-STOCKFISH_PATH = os.path.join("stockfish", "stockfish-ubuntu-x86-64-avx2")  # Укажи свой путь здесь
+# Путь к бинарнику (должен быть с NNUE и AVX2!)
+STOCKFISH_PATH = os.path.join("stockfish", "stockfish-ubuntu-x86-64-avx2")
 
 try:
     engine = chess.engine.SimpleEngine.popen_uci(STOCKFISH_PATH)
-    print("✅ Stockfish с NNUE запущен успешно.")
+    engine.configure({
+        "Threads": 4,
+        "Hash": 2048
+    })
+    print("✅ Stockfish запущен с NNUE и оптимальными параметрами.")
 except Exception as e:
     print(f"❌ Ошибка запуска Stockfish: {e}")
     engine = None
@@ -31,16 +35,14 @@ def bestmove():
         if board.is_game_over():
             return jsonify({'error': 'Game already over'}), 400
 
-        # Максимально сильный вызов Stockfish: анализ на глубине 30
-        limit = chess.engine.Limit(depth=30)  # или: Limit(time=5.0)
+        # Выставляем глубокий анализ
+        limit = chess.engine.Limit(depth=35)  # Или time=10.0
         result = engine.play(board, limit)
 
         move = result.move
-        info = engine.analyse(board, limit)
 
         print(f"FEN: {fen}")
-        print(f"Лучший ход: {move}")
-        print(f"Оценка: {info.get('score')}")
+        print(f"Best move: {move}")
 
         return jsonify({'bestmove': move.uci()})
 
