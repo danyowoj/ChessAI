@@ -4,12 +4,31 @@ let pendingPromotion = null;
 let playerColor = 'w';
 let hasMoved = false;
 const moveSound = new Audio('/static/sounds/move.mp3');
+let lastMoveSquares = [];
+
+function highlightLastMove(from, to) {
+    // Удаляем предыдущую подсветку
+    lastMoveSquares.forEach(sq => {
+        $(`#board .square-${sq}`).removeClass('highlight-last');
+    });
+
+    // Очищаем массив
+    lastMoveSquares = [];
+
+    // Добавляем новые клетки
+    if (from && to) {
+        lastMoveSquares.push(from, to);
+        $(`#board .square-${from}`).addClass('highlight-last');
+        $(`#board .square-${to}`).addClass('highlight-last');
+    }
+}
 
 function switchSides() {
     playerColor = (playerColor === 'w') ? 'b' : 'w';
     board.orientation(playerColor === 'w' ? 'white' : 'black');
     game.reset();
     board.start();
+    highlightLastMove(null, null);
     updateStatus();
     hasMoved = false;
     $('#switchSidesBtn').show();
@@ -55,10 +74,18 @@ function onMouseoverSquare(square, piece) {
 
 
 function onMouseoutSquare() {
-    removeGreySquares();
+    $('.square-55d63').not('.highlight-last').css('background', '');
 }
 
 function onDragStart(source, piece) {
+    // Временно усиливаем подсветку при перетаскивании
+    if (lastMoveSquares.includes(source)) {
+        $(`#board .square-${source}`).css({
+            'background-color': 'rgba(247, 198, 60, 0.9)',
+            'box-shadow': 'inset 0 0 12px rgba(0, 0, 0, 0.5)'
+        });
+    }
+
     if (
         game.game_over() ||
         game.turn() !== playerColor ||
@@ -66,11 +93,17 @@ function onDragStart(source, piece) {
     ) {
         return false;
     }
+    //highlightLastMove(lastMoveSquares[0], lastMoveSquares[1]);
 }
 
 function onDrop(source, target) {
     removeGreySquares();
     $('.suggested-move').removeClass('suggested-move');
+
+    // Восстанавливаем обычную подсветку
+    if (lastMoveSquares.length === 2) {
+        highlightLastMove(lastMoveSquares[0], lastMoveSquares[1]);
+    }
 
     // Проверяем, является ли ход превращением пешки
     const promotionMove = isPromotionMove(source, target);
@@ -105,6 +138,8 @@ function completeMove(source, target, promotion = 'q') {
     if (!move) return 'snapback';
 
     board.position(game.fen());
+
+    highlightLastMove(source, target);
     moveSound.play();
 
     updateStatus();
@@ -112,11 +147,7 @@ function completeMove(source, target, promotion = 'q') {
     if (game.game_over()) {
         showGameResult();
     } else if (game.turn() !== playerColor) {
-        const minDelay = 100;
-        const maxDelay = 1000;
-        const randomDelay = Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay;
-
-        setTimeout(makeComputerMove, randomDelay);
+        makeComputerMove();
     }
 
     if (!hasMoved) {
@@ -191,7 +222,10 @@ async function makeComputerMove() {
 
 
         board.position(game.fen());
+
+        highlightLastMove(move.from, move.to);
         moveSound.play();
+
         updateStatus();
 
         if (game.game_over()) {
