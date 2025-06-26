@@ -1,96 +1,132 @@
 from flask import Flask, render_template, request, jsonify
-from stockfish import Stockfish
+import chess
+import chess.engine
+import os
+import subprocess
 
-app = Flask(__name__,
-            static_folder='static',
-            template_folder='.')
+app = Flask(__name__, static_folder='static', template_folder='.')
 
-# Инициализация Stockfish с максимальными параметрами
+# Путь к бинарнику (должен быть с NNUE и AVX2!)
+STOCKFISH_PATH = os.path.join("stockfish", "stockfish-ubuntu-x86-64-avx2")
+
 try:
-    # Инициализация Stockfish с совместимыми параметрами
-    stockfish = Stockfish(
-        path="/usr/games/stockfish",
-        depth=22,
-        parameters={
-            "Threads": 4,  # Использовать 4 ядра
-            "Hash": 2048,  # 2GB памяти
-            "Skill Level": 20,  # Максимальная сложность (0-20)
-            "UCI_LimitStrength": "false",
-            "UCI_Elo": 3000,  # Максимальный рейтинг
-            "Slow Mover": 100,  # Интенсивность анализа
-            "Contempt": 0,  # Нейтральный стиль игры
-            "Minimum Thinking Time": 1000  # Минимум 1 секунда на ход
-        }
-    )
-
-    # Альтернативный способ включения NNUE (если доступен)
-    if hasattr(stockfish, 'set_nnue'):
-        stockfish.set_nnue("true")
-        print("NNUE используется")
-
-    print("Stockfish успешно инициализирован с параметрами:")
-    print(stockfish.get_parameters())  # Выводим текущие параметры
-
+    engine = chess.engine.SimpleEngine.popen_uci(STOCKFISH_PATH)
+    engine.configure({
+        "Threads": 4,
+        "Hash": 2048
+    })
+    print("✅ Stockfish запущен с NNUE и оптимальными параметрами.")
 except Exception as e:
-    print(f"Ошибка инициализации Stockfish: {str(e)}")
-    # Попробуем более простую инициализацию
-    try:
-        stockfish = Stockfish(path="stockfish")
-        stockfish.set_depth(20)
-        stockfish.set_skill_level(20)
-        print("Использована упрощенная инициализация")
-    except:
-        print("Не удалось инициализировать Stockfish")
-        exit(1)
+    print(f"❌ Ошибка запуска Stockfish: {e}")
+    engine = None
 
 @app.route('/')
 def index():
     return render_template('index.html')
 
-
 @app.route('/bestmove', methods=['POST'])
 def bestmove():
     try:
         data = request.get_json()
-        fen = data['fen']
+        fen = data.get('fen')
+        if not fen:
+            return jsonify({'error': 'FEN not provided'}), 400
 
-        if not stockfish.is_fen_valid(fen):
-            return jsonify({'error': 'Invalid FEN'}), 400
+        board = chess.Board(fen)
+        if board.is_game_over():
+            return jsonify({'error': 'Game already over'}), 400
 
-        stockfish.set_fen_position(fen)
+        # Выставляем глубокий анализ
+        limit = chess.engine.Limit(depth=35)  # Или time=10.0
+        result = engine.play(board, limit)
 
-        # Используем продвинутый метод с контролем времени
-        move = stockfish.get_best_move_time(2000)  # 2 секунды на анализ
+        move = result.move
 
-        if not move:
-            return jsonify({'error': 'No move available'}), 400
+        print(f"FEN: {fen}")
+        print(f"Best move: {move}")
 
-        return jsonify({'bestmove': move})
+        return jsonify({'bestmove': move.uci()})
 
     except Exception as e:
-        print(f"Ошибка в bestmove: {str(e)}")
+        print(f"Ошибка при анализе хода: {e}")
         return jsonify({'error': str(e)}), 500
 
 
-@app.route('/set_difficulty', methods=['POST'])
-def set_difficulty():
-    """Эндпоинт для динамического изменения сложности"""
-    level = request.json.get('level', 'max')
+@app.route('/playmove', methods=['POST'])
+def playmove():
+    try:
+        data = request.get_json()
+        fen = data.get('fen')
 
-    if level == 'easy':
-        params = {"Skill Level": 5, "UCI_LimitStrength": "true", "UCI_Elo": 1200}
-    elif level == 'medium':
-        params = {"Skill Level": 15, "UCI_LimitStrength": "false"}
-    else:  # max/hard
-        params = {
-            "Skill Level": 20,
-            "UCI_LimitStrength": "false",
-            "Threads": 4,
-            "Hash": 2048
-        }
+        if not fen:
+            return jsonify({'error': 'FEN not provided'}), 400
 
-    stockfish.update_engine_parameters(params)
-    return jsonify({'status': f'Установлен уровень: {level}'})
+        # Запускаем Stockfish-процесс
+        process = subprocess.Popen(
+            [STOCKFISH_PATH],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            universal_newlines=True
+        )
 
-if __name__ == '__main__':
+        def write(cmd):
+            process.stdin.write(cmd + '\n')
+            process.stdin.flush()
+
+        def read_until(target):
+            while True:
+                line = process.stdout.readline()
+                if line.strip().startswith(target):
+                    return line.strip()
+
+        # Инициализация и настройка параметров
+        write("uci")
+        read_until("uciok")
+
+        write("setoption name Hash value 4096")
+        write("setoption name Threads value 8")
+        # write("setoption name UCI_LimitStrength value true")
+        # write("setoption name UCI_Elo value 3190")
+
+        write("isready")
+        read_until("readyok")
+
+        write("ucinewgame")
+        write(f"position fen {fen}")
+        write("isready")
+        read_until("readyok")
+
+        write("go depth 30")
+
+        bestmove = None
+        while True:
+            line = process.stdout.readline().strip()
+            if not line:
+                continue
+
+            print("SF:", line)  # Логировать для отладки
+
+            if line.startswith("bestmove"):
+                parts = line.split()
+                if len(parts) >= 2 and len(parts[1]) == 4 or len(parts[1]) == 5:  # пример: e2e4 или e7e8q
+                    bestmove = parts[1]
+                else:
+                    print("⚠️ Не удалось извлечь ход из строки:", line)
+                break
+        if not bestmove:
+            return jsonify({'error': 'Stockfish не вернул ход'}), 500
+
+        print("FEN на анализ:", fen)
+        print(f"Stockfish выдал: {bestmove}")
+
+        process.stdin.write("quit\n")
+        process.stdin.flush()
+        process.terminate()
+
+        return jsonify({"bestmove": bestmove})
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+if __name__ == "__main__":
     app.run(debug=True)

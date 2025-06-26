@@ -1,12 +1,33 @@
 let board = null;
 let game = new Chess();
-let pendingPromotion = null; // Будет хранить информацию о превращении
+let pendingPromotion = null;
+let playerColor = 'w';
+let hasMoved = false;
+const moveSound = new Audio('/static/sounds/move.mp3');
+
+function switchSides() {
+    playerColor = (playerColor === 'w') ? 'b' : 'w';
+    board.orientation(playerColor === 'w' ? 'white' : 'black');
+    game.reset();
+    board.start();
+    updateStatus();
+    hasMoved = false;
+    $('#switchSidesBtn').show();
+
+    if (game.turn() !== playerColor) {
+        setTimeout(makeComputerMove, 300);
+    }
+}
 
 function updateStatus() {
     const statusEl = document.getElementById('status');
-    statusEl.textContent = game.turn() === 'w' ? 'Ваш ход (белые)' : 'Компьютер думает...';
 
-    // Подсветка текущего игрока
+    if (game.turn() === playerColor) {
+        statusEl.textContent = `Ваш ход (${playerColor === 'w' ? 'белые' : 'черные'})`;
+    } else {
+        statusEl.textContent = "Компьютер думает...";
+    }
+
     const boardElement = document.getElementById('board');
     boardElement.classList.remove('white-turn', 'black-turn');
     boardElement.classList.add(game.turn() === 'w' ? 'white-turn' : 'black-turn');
@@ -23,8 +44,7 @@ function greySquare(square) {
 }
 
 function onMouseoverSquare(square, piece) {
-    // Подсвечивать только белые фигуры, когда ход белых
-    if (!piece || piece[0] !== 'w' || game.turn() !== 'w') return;
+    if (!piece || piece[0] !== playerColor || game.turn() !== playerColor) return;
 
     const moves = game.moves({ square, verbose: true });
     if (moves.length === 0) return;
@@ -33,16 +53,17 @@ function onMouseoverSquare(square, piece) {
     moves.forEach(move => greySquare(move.to));
 }
 
+
 function onMouseoutSquare() {
     removeGreySquares();
 }
 
 function onDragStart(source, piece) {
-    // Запретить перетаскивание, если:
-    // - Игра закончена
-    // - Не очередь белых
-    // - Кликают по черной фигуре
-    if (game.game_over() || game.turn() !== 'w' || piece[0] !== 'w') {
+    if (
+        game.game_over() ||
+        game.turn() !== playerColor ||
+        piece[0] !== playerColor
+    ) {
         return false;
     }
 }
@@ -54,16 +75,13 @@ function onDrop(source, target) {
     // Проверяем, является ли ход превращением пешки
     const promotionMove = isPromotionMove(source, target);
 
-    if (promotionMove && game.turn() === 'w') {
-        // Для игрока показываем модальное окно выбора
+    if (promotionMove && game.turn() === playerColor) {
         pendingPromotion = { from: source, to: target };
         showPromotionModal();
-        return 'snapback'; // Временно возвращаем фигуру
-    } else if (promotionMove && game.turn() === 'b') {
-        // Для компьютера выбираем ферзя
+        return 'snapback';
+    } else if (promotionMove) {
         return completeMove(source, target, 'q');
     } else {
-        // Обычный ход
         return completeMove(source, target);
     }
 }
@@ -87,17 +105,23 @@ function completeMove(source, target, promotion = 'q') {
     if (!move) return 'snapback';
 
     board.position(game.fen());
+    moveSound.play();
+
     updateStatus();
 
     if (game.game_over()) {
         showGameResult();
-    } else if (game.turn() === 'b') {
-        // Делаем ход компьютера через небольшую случайную задержку
-        const minDelay = 100; // минимальная задержка
-        const maxDelay = 1000; // максимальная задержка
+    } else if (game.turn() !== playerColor) {
+        const minDelay = 100;
+        const maxDelay = 1000;
         const randomDelay = Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay;
 
         setTimeout(makeComputerMove, randomDelay);
+    }
+
+    if (!hasMoved) {
+    $('#switchSidesBtn').hide();
+    hasMoved = true;
     }
 
     return true;
@@ -128,15 +152,16 @@ $(document).ready(function() {
 });
 
 async function makeComputerMove() {
-    if (game.game_over()) return;
-    if (game.turn() !== 'b') return; // Проверяем, что сейчас ход чёрных (компьютера)
+    if (game.game_over() || game.turn() === playerColor) return;
+
+    console.log("FEN отправлен на сервер:", game.fen());
 
     try {
         updateStatus(); // Показываем "Компьютер думает..."
 
         console.log("Отправка FEN на сервер:", game.fen()); // Логирование
 
-        const response = await fetch('/bestmove', {
+        const response = await fetch('/playmove', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ fen: game.fen() })
@@ -153,12 +178,20 @@ async function makeComputerMove() {
             throw new Error("Сервер не вернул ход");
         }
 
-        const move = game.move(data.bestmove);
-        if (!move) {
-            throw new Error("Недопустимый ход");
+        const move = {
+            from: data.bestmove.slice(0, 2),
+            to: data.bestmove.slice(2, 4),
+            promotion: data.bestmove.length === 5 ? data.bestmove[4] : undefined
+        };
+
+        const legalMove = game.move(move);
+        if (!legalMove) {
+            throw new Error("Сервер прислал недопустимый ход: " + data.bestmove);
         }
 
+
         board.position(game.fen());
+        moveSound.play();
         updateStatus();
 
         if (game.game_over()) {
@@ -182,7 +215,7 @@ async function makeComputerMove() {
         } catch (fallbackError) {
             console.error("Ошибка при случайном ходе:", fallbackError);
             // Если даже случайный ход не получился, передаём ход игроку
-            game.turn('w');
+            game.turn(playerColor);
             updateStatus();
             alert("Компьютер не смог сделать ход. Ваш ход.");
         }
@@ -191,8 +224,12 @@ async function makeComputerMove() {
 
 function showGameResult() {
     let resultText = '';
+
     if (game.in_checkmate()) {
-        resultText = game.turn() === 'w' ? 'Компьютер поставил мат! Вы проиграли.' : 'Вы поставили мат! Победа!';
+        // Если мат, и ходить должен игрок — он проиграл. Иначе — победил.
+        resultText = game.turn() === playerColor
+            ? 'Компьютер поставил мат! Вы проиграли.'
+            : 'Вы поставили мат! Победа!';
     } else if (game.in_draw()) {
         resultText = 'Игра закончилась вничью.';
     } else if (game.in_stalemate()) {
@@ -210,9 +247,9 @@ function showGameResult() {
 }
 
 function suggestMove() {
-    if (game.game_over() || game.turn() !== 'w') return;
+    if (game.game_over() || game.turn() !== playerColor) return;
 
-    fetch('/bestmove', {
+    fetch('/playmove', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ fen: game.fen() })
@@ -224,12 +261,15 @@ function suggestMove() {
         const from = data.bestmove.slice(0, 2);
         const to = data.bestmove.slice(2, 4);
 
+        // Снимаем старую подсветку
         removeGreySquares();
-        $(`#board .square-${from}`).addClass('suggested-move');
-        $(`#board .square-${to}`).addClass('suggested-move');
+
+        // Подсвечиваем исходную и целевую клетки
+        $(`#board .square-${from}`).css('background', '#00ff0060'); // зелёная подсветка
+        $(`#board .square-${to}`).css('background', '#00ff0060');
     })
     .catch(error => {
-        console.error('Error getting suggested move:', error);
+        console.error('Ошибка получения подсказки:', error);
     });
 }
 
@@ -268,6 +308,21 @@ $(document).ready(function () {
         $('#resultModal').show();
     });
     $('#confirmNo').on('click', () => $('#confirmResign').hide());
+
+    // Кнопка "Сменить сторону"
+    $('#switchSidesBtn').on('click', () => {
+        $('#confirmSwitch').show();
+    });
+
+    // Кнопки подтверждения смены
+    $('#confirmSwitchYes').on('click', () => {
+        $('#confirmSwitch').hide();
+        switchSides(); // выполняем смену
+    });
+
+    $('#confirmSwitchNo').on('click', () => {
+        $('#confirmSwitch').hide(); // отмена
+    });
 
     // Кнопка "предложить ход"
     $('#suggestBtn').on('click', suggestMove);
