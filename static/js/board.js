@@ -39,17 +39,28 @@ function switchSides() {
 }
 
 function updateStatus() {
-    const statusEl = document.getElementById('status');
+    const statusContainer = $('#statusContainer');
+    const statusHeader = $('#statusHeader');
+    const statusThinking = $('#statusThinking');
+
+    statusContainer.addClass('hidden');
 
     if (game.turn() === playerColor) {
-        statusEl.textContent = `Ваш ход (${playerColor === 'w' ? 'белые' : 'черные'})`;
+        // Ход игрока
+        statusHeader.text(`Ваш ход (${playerColor === 'w' ? 'белые' : 'черные'})`);
+        statusThinking.hide();
+
+        // Обновляем классы для подсветки доски
+        const boardElement = document.getElementById('board');
+        boardElement.classList.remove('white-turn', 'black-turn');
+        boardElement.classList.add(game.turn() === 'w' ? 'white-turn' : 'black-turn');
     } else {
-        statusEl.textContent = "Компьютер думает...";
+        // Ход компьютера
+        statusHeader.text('Компьютер думает');
+        statusThinking.show();
     }
 
-    const boardElement = document.getElementById('board');
-    boardElement.classList.remove('white-turn', 'black-turn');
-    boardElement.classList.add(game.turn() === 'w' ? 'white-turn' : 'black-turn');
+    statusContainer.removeClass('hidden');
 }
 
 function removeGreySquares() {
@@ -185,10 +196,10 @@ $(document).ready(function() {
 async function makeComputerMove() {
     if (game.game_over() || game.turn() === playerColor) return;
 
-    console.log("FEN отправлен на сервер:", game.fen());
+    $('#computerThinking').show();
 
     try {
-        updateStatus(); // Показываем "Компьютер думает..."
+        updateStatus();
 
         console.log("Отправка FEN на сервер:", game.fen()); // Логирование
 
@@ -253,6 +264,8 @@ async function makeComputerMove() {
             updateStatus();
             alert("Компьютер не смог сделать ход. Ваш ход.");
         }
+    } finally {
+        $('#computerThinking').hide();
     }
 }
 
@@ -280,31 +293,59 @@ function showGameResult() {
     }
 }
 
-function suggestMove() {
+async function suggestMove() {
     if (game.game_over() || game.turn() !== playerColor) return;
 
-    fetch('/playmove', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fen: game.fen() })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (!data.bestmove) return;
+    $('#statusHeader').text('Формирование подсказки');
+    $('#statusAnalysis').html('<div class="thinking-dots active"><div class="thinking-dot"></div><div class="thinking-dot"></div><div class="thinking-dot"></div></div>');
+    $('#statusThinking').show();
+
+    try {
+        const response = await fetch('/playmove', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fen: game.fen() })
+        });
+
+        if (!response.ok) throw new Error('Ошибка сервера');
+
+        const data = await response.json();
+        if (!data.bestmove) throw new Error('Подсказка не найдена');
 
         const from = data.bestmove.slice(0, 2);
         const to = data.bestmove.slice(2, 4);
 
-        // Снимаем старую подсветку
-        removeGreySquares();
+        // Форматируем подсказку
+        const moveNotation = game.move({
+            from: from,
+            to: to,
+            promotion: data.bestmove.length === 5 ? data.bestmove[4] : undefined
+        }).san;
 
-        // Подсвечиваем исходную и целевую клетки
-        $(`#board .square-${from}`).css('background', '#00ff0060'); // зелёная подсветка
+        // Отображаем подсказку
+        $('#statusHeader').text('Рекомендованный ход');
+        $('#statusAnalysis').html(`
+            <div>${moveNotation}</div>
+            <div class="suggestion-text">Нажмите на фигуру, чтобы увидеть возможные ходы</div>
+        `);
+
+        // Подсвечиваем ход на доске
+        removeGreySquares();
+        $(`#board .square-${from}`).css('background', '#00ff0060');
         $(`#board .square-${to}`).css('background', '#00ff0060');
-    })
-    .catch(error => {
+
+    } catch (error) {
         console.error('Ошибка получения подсказки:', error);
-    });
+        $('#statusHeader').text('Не удалось сформировать подсказку');
+        $('#statusThinking').hide();
+
+        // Восстанавливаем обычный статус через 2 секунды
+        setTimeout(() => {
+            updateStatus();
+        }, 2000);
+    } finally {
+        $('#statusThinking').hide();
+    }
 }
 
 const config = {

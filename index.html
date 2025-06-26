@@ -5,17 +5,25 @@
     <title>Chess AI</title>
     <link rel="stylesheet" href="/static/chessboard/chessboard-1.0.0.min.css">
     <link rel="stylesheet" href="/static/css/style.css">
-    <style>
-    body {
-        background-color: #B2BEB5;
-    }
-    </style>
 </head>
 <body>
     <h1 style="text-align: center;">Chess AI</h1>
 
     <div id="board" style="width: 100%; max-width: 500px; margin: 0 auto;"></div>
-    <div id="status" style="text-align: center; margin-top: 10px; font-size: 18px;"></div>
+
+    <!-- Контейнер со статусом -->
+    <div id="statusContainer" class="status-container">
+        <div id="statusHeader" class="status-header">Ваш ход (белые)</div>
+        <div id="statusThinking" class="status-thinking" style="display: none;">
+            <div class="thinking-dots">
+                <div class="thinking-dot"></div>
+                <div class="thinking-dot"></div>
+                <div class="thinking-dot"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Контейнер с кнопками -->
     <div class="buttons-container">
         <button id="switchSidesBtn" class="chess-btn">Сменить сторону</button>
         <button id="suggestBtn" class="chess-btn">Подсказка</button>

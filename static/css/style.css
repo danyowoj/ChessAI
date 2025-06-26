@@ -1,3 +1,7 @@
+body {
+    background-color: #B2BEB5;
+}
+
 #board {
     height: 500px;
     max-width: 500px;
@@ -78,20 +82,6 @@
 
 .promotion-piece:hover {
     transform: scale(1.1);
-}
-
-.difficulty-controls button {
-    padding: 8px 15px;
-    margin: 0 5px;
-    background: #4a6ea9;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-.difficulty-controls button:hover {
-    background: #3a5a8f;
 }
 
 /* Стиль подсветки для светлых клеток */
@@ -184,4 +174,82 @@
 
 #confirmNo, #confirmSwitchNo {
     background: linear-gradient(135deg, #F8D7DA 0%, #F5B7B1 100%);
+}
+
+/* Стили для контейнера статуса */
+.status-container {
+    transition: all 0.3s ease;
+    opacity: 1;
+    max-height: 200px;
+    overflow: hidden;
+    max-width: 470px;
+    margin: 15px auto;
+    padding: 12px 15px;
+    background-color: rgba(255, 255, 255, 0.9);
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    font-size: 16px;
+    text-align: center;
+}
+
+.status-container.hidden {
+    opacity: 0;
+    max-height: 0;
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
+}
+
+.status-header {
+    font-weight: 500;
+    margin-bottom: 8px;
+    color: #333;
+}
+
+.status-thinking {
+    margin-top: 8px;
+}
+
+.thinking-dots .thinking-dot {
+    opacity: 0;
+    transform: translateY(5px);
+    transition: all 0.3s ease;
+}
+
+.thinking-dots.active .thinking-dot {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.thinking-dots {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+}
+
+.thinking-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #4a6ea9;
+    animation: thinkingPulse 1.4s infinite ease-in-out;
+}
+
+.thinking-dot:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.thinking-dot:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes thinkingPulse {
+    0%, 100% { transform: scale(0.9); opacity: 0.6; }
+    50% { transform: scale(1.2); opacity: 1; }
+}
+
+.suggestion-text {
+    font-style: italic;
+    color: #4a6ea9;
+    margin-top: 5px;
 }
