@@ -1,6 +1,6 @@
 let board = null;
 let game = new Chess();
-let pendingPromotion = null; // Будет хранить информацию о превращении
+let pendingPromotion = null;
 let playerColor = 'w';
 let hasMoved = false;
 
@@ -151,12 +151,14 @@ $(document).ready(function() {
 async function makeComputerMove() {
     if (game.game_over() || game.turn() === playerColor) return;
 
+    console.log("FEN отправлен на сервер:", game.fen());
+
     try {
         updateStatus(); // Показываем "Компьютер думает..."
 
         console.log("Отправка FEN на сервер:", game.fen()); // Логирование
 
-        const response = await fetch('/bestmove', {
+        const response = await fetch('/playmove', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ fen: game.fen() })
@@ -173,10 +175,17 @@ async function makeComputerMove() {
             throw new Error("Сервер не вернул ход");
         }
 
-        const move = game.move(data.bestmove);
-        if (!move) {
-            throw new Error("Недопустимый ход");
+        const move = {
+            from: data.bestmove.slice(0, 2),
+            to: data.bestmove.slice(2, 4),
+            promotion: data.bestmove.length === 5 ? data.bestmove[4] : undefined
+        };
+
+        const legalMove = game.move(move);
+        if (!legalMove) {
+            throw new Error("Сервер прислал недопустимый ход: " + data.bestmove);
         }
+
 
         board.position(game.fen());
         updateStatus();
@@ -236,7 +245,7 @@ function showGameResult() {
 function suggestMove() {
     if (game.game_over() || game.turn() !== playerColor) return;
 
-    fetch('/bestmove', {
+    fetch('/playmove', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ fen: game.fen() })
