@@ -16,10 +16,10 @@
 
     <div id="board" style="width: 100%; max-width: 500px; margin: 0 auto;"></div>
     <div id="status" style="text-align: center; margin-top: 10px; font-size: 18px;"></div>
-
-    <div style="text-align: center; margin-top: 20px;">
-        <button id="resignBtn">Сдаться</button>
-        <button id="suggestBtn">Предложить ход</button>
+    <div class="buttons-container">
+        <button id="switchSidesBtn" class="chess-btn">Сменить сторону</button>
+        <button id="suggestBtn" class="chess-btn">Подсказка</button>
+        <button id="resignBtn" class="chess-btn">Сдаться</button>
     </div>
 
     <!-- Модальное окно подтверждения -->
@@ -35,7 +35,7 @@
     <div id="resultModal" class="modal" style="display: none;">
         <div class="modal-content">
             <p id="resultText"></p>
-            <button onclick="location.reload()">Новая игра</button>
+            <button id="newgameBtn" onclick="location.reload()">Новая игра</button>
         </div>
     </div>
 
@@ -50,10 +50,6 @@
                 <img src="/static/chessboard/img/chesspieces/wikipedia/wN.png" data-piece="n" class="promotion-piece">
             </div>
         </div>
-    </div>
-
-    <div style="text-align: center; margin-top: 10px;">
-        <button id="switchSidesBtn">Сменить сторону</button>
     </div>
 
     <!-- Модальное окно подтверждения смены стороны -->

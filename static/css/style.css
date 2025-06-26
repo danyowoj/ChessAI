@@ -34,6 +34,30 @@
     box-shadow: 0 0 10px black;
 }
 
+/* Стили для кнопок в модальных окнах */
+.modal-content button {
+    background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
+    margin: 5px 10px;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-size: 15px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.modal-content button:hover {
+    transform: scale(1.05);
+}
+
+.modal-content #confirmYes {
+    background: linear-gradient(135deg, #C8E6C9 0%, #81C784 100%);
+}
+
+.modal-content #confirmNo {
+    background: linear-gradient(135deg, #FFCDD2 0%, #E57373 100%);
+}
+
 .suggested-move {
     background: #B2BEB5 !important;
 }
@@ -94,4 +118,70 @@
     position: relative;
 
     );
+}
+
+/* Стили для контейнера кнопок */
+.buttons-container {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin: 20px auto;
+    max-width: 500px;
+    flex-wrap: wrap;
+}
+
+.chess-btn {
+    padding: 12px 20px;
+    border: none;
+    border-radius: 25px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    background-size: 200% 200%;
+    transition: all 0.5s ease;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    color: #333;
+    min-width: 120px;
+    text-align: center;
+    text-shadow: 0 1px 1px rgba(255, 255, 255, 0.3);
+}
+
+/* Эффекты при наведении с небольшим изменением градиента */
+.chess-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    opacity: 0.9;
+    background-position: 100% 100%;
+}
+
+/* Активное состояние - градиент становится более насыщенным */
+.chess-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    background-size: 100% 100%;
+}
+
+/* Индивидуальные цвета для кнопок */
+#switchSidesBtn {
+    background: linear-gradient(135deg, #A8D8EA 0%, #7AC1E4 100%);
+}
+
+#suggestBtn {
+    background: linear-gradient(135deg, #FFD3B5 0%, #FFB347 100%);
+}
+
+#resignBtn {
+    background: linear-gradient(135deg, #FFAAA7 0%, #FF8C94 100%);
+}
+
+#newgameBtn {
+    background: linear-gradient(135deg, #A8D8EA 0%, #7AC1E4 100%);
+}
+
+#confirmYes, #confirmSwitchYes {
+    background: linear-gradient(135deg, #D4EDDA 0%, #A5D6A7 100%);
+}
+
+#confirmNo, #confirmSwitchNo {
+    background: linear-gradient(135deg, #F8D7DA 0%, #F5B7B1 100%);
 }
