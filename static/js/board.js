@@ -3,6 +3,7 @@ let game = new Chess();
 let pendingPromotion = null;
 let playerColor = 'w';
 let hasMoved = false;
+const moveSound = new Audio('/static/sounds/move.mp3');
 
 function switchSides() {
     playerColor = (playerColor === 'w') ? 'b' : 'w';
@@ -104,6 +105,8 @@ function completeMove(source, target, promotion = 'q') {
     if (!move) return 'snapback';
 
     board.position(game.fen());
+    moveSound.play();
+
     updateStatus();
 
     if (game.game_over()) {
@@ -188,6 +191,7 @@ async function makeComputerMove() {
 
 
         board.position(game.fen());
+        moveSound.play();
         updateStatus();
 
         if (game.game_over()) {
