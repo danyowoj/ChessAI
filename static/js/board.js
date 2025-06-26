@@ -5,6 +5,7 @@ let playerColor = 'w';
 let hasMoved = false;
 const moveSound = new Audio('/static/sounds/move.mp3');
 let lastMoveSquares = [];
+let currentSuggestion = null;
 
 function highlightLastMove(from, to) {
     // Удаляем предыдущую подсветку
@@ -74,6 +75,14 @@ function greySquare(square) {
 }
 
 function onMouseoverSquare(square, piece) {
+    // Если есть подсказка и наводим на исходную клетку подсказки
+    if (currentSuggestion && square === currentSuggestion.from) {
+        removeGreySquares();
+        greySquare(square);
+        greySquare(currentSuggestion.to);
+        return;
+    }
+
     if (!piece || piece[0] !== playerColor || game.turn() !== playerColor) return;
 
     const moves = game.moves({ square, verbose: true });
@@ -86,6 +95,11 @@ function onMouseoverSquare(square, piece) {
 
 function onMouseoutSquare() {
     $('.square-55d63').not('.highlight-last').css('background', '');
+
+    // Восстанавливаем подсветку подсказки, если она есть
+    if (currentSuggestion) {
+        highlightSuggestion();
+    }
 }
 
 function onDragStart(source, piece) {
@@ -140,6 +154,12 @@ function isPromotionMove(source, target) {
 }
 
 function completeMove(source, target, promotion = 'q') {
+    // Сбрасываем подсказку при любом ходе игрока
+    if (currentSuggestion) {
+        removeGreySquares();
+        currentSuggestion = null;
+    }
+
     const move = game.move({
         from: source,
         to: target,
@@ -296,8 +316,14 @@ function showGameResult() {
 async function suggestMove() {
     if (game.game_over() || game.turn() !== playerColor) return;
 
+    // Сбрасываем предыдущую подсказку
+    if (currentSuggestion) {
+        removeGreySquares();
+        currentSuggestion = null;
+    }
+
+    // Показываем состояние "Формирование подсказки"
     $('#statusHeader').text('Формирование подсказки');
-    $('#statusAnalysis').html('<div class="thinking-dots active"><div class="thinking-dot"></div><div class="thinking-dot"></div><div class="thinking-dot"></div></div>');
     $('#statusThinking').show();
 
     try {
@@ -312,40 +338,43 @@ async function suggestMove() {
         const data = await response.json();
         if (!data.bestmove) throw new Error('Подсказка не найдена');
 
-        const from = data.bestmove.slice(0, 2);
-        const to = data.bestmove.slice(2, 4);
+        // Сохраняем подсказку
+        currentSuggestion = {
+            from: data.bestmove.slice(0, 2),
+            to: data.bestmove.slice(2, 4),
+            promotion: data.bestmove.length === 5 ? data.bestmove[4] : undefined
+        };
 
         // Форматируем подсказку
-        const moveNotation = game.move({
-            from: from,
-            to: to,
-            promotion: data.bestmove.length === 5 ? data.bestmove[4] : undefined
-        }).san;
+        const move = game.move({
+            from: currentSuggestion.from,
+            to: currentSuggestion.to,
+            promotion: currentSuggestion.promotion
+        });
+        game.undo(); // Отменяем ход, так как он был только для получения нотации
 
         // Отображаем подсказку
-        $('#statusHeader').text('Рекомендованный ход');
-        $('#statusAnalysis').html(`
-            <div>${moveNotation}</div>
-            <div class="suggestion-text">Нажмите на фигуру, чтобы увидеть возможные ходы</div>
-        `);
+        $('#statusHeader').text('Подсказка сформирована!');
 
         // Подсвечиваем ход на доске
-        removeGreySquares();
-        $(`#board .square-${from}`).css('background', '#00ff0060');
-        $(`#board .square-${to}`).css('background', '#00ff0060');
+        highlightSuggestion();
 
     } catch (error) {
         console.error('Ошибка получения подсказки:', error);
-        $('#statusHeader').text('Не удалось сформировать подсказку');
-        $('#statusThinking').hide();
-
-        // Восстанавливаем обычный статус через 2 секунды
-        setTimeout(() => {
-            updateStatus();
-        }, 2000);
+        $('#statusHeader').text('Ошибка получения подсказки');
     } finally {
         $('#statusThinking').hide();
     }
+}
+
+function highlightSuggestion() {
+    if (!currentSuggestion) return;
+
+    removeGreySquares();
+
+    // Подсвечиваем исходную и целевую клетки
+    $(`#board .square-${currentSuggestion.from}`).css('background', '#00ff0060');
+    $(`#board .square-${currentSuggestion.to}`).css('background', '#00ff0060');
 }
 
 const config = {
