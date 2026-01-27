@@ -1,3 +1,4 @@
+chess
 flask~=3.1.1
 torch
 datasets
