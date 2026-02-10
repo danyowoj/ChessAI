@@ -5,13 +5,13 @@ import torch.nn.functional as F
 
 class AlphaZeroNet(nn.Module):
     """
-    Базовая нейросеть в стиле AlphaZero:
+    AlphaZero-style нейросеть с улучшенным входным представлением:
     - общий сверточный backbone
     - policy head (вероятности ходов)
     - value head (оценка позиции)
     """
 
-    def __init__(self, in_channels=12):
+    def __init__(self, in_channels=18):
         super().__init__()
 
         # Общий сверточный блок
@@ -28,6 +28,11 @@ class AlphaZeroNet(nn.Module):
         self.value_fc2 = nn.Linear(64, 1)
 
     def forward(self, x):
+        """
+        Прямое распространение.
+
+        :param x: [batch, 18, 8, 8]
+        """
         # Общий backbone
         x = F.relu(self.conv1(x))
         x = F.relu(self.conv2(x))
