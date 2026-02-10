@@ -1,15 +1,32 @@
 import torch
-
+import chess
 from .encoder import board_to_tensor
 
 
 @torch.no_grad()
-def evaluate_position(model, board, device):
+def evaluate(model, board, device):
     """
-    Прогоняет позицию через сеть и возвращает value
+    Прогон позиции через нейросеть.
+
+    Возвращает:
+    - policy: dict(move -> probability)
+    - value: оценка позиции [-1, 1]
     """
 
-    tensor = board_to_tensor(board).unsqueeze(0).to(device)
-    _, value = model(tensor)
+    x = board_to_tensor(board).unsqueeze(0).to(device)
+    policy_logits, value = model(x)
 
-    return value.item()
+    policy_logits = policy_logits.squeeze(0)
+
+    policy = {}
+    legal_moves = list(board.legal_moves)
+
+    if not legal_moves:
+        return policy, value.item()
+
+    probs = torch.softmax(policy_logits[:len(legal_moves)], dim=0)
+
+    for move, p in zip(legal_moves, probs):
+        policy[move] = p.item()
+
+    return policy, value.item()
