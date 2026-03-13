@@ -61,8 +61,8 @@ for epoch in range(EPOCHS):
         print("New model becomes BEST")
         best_model.load_state_dict(new_model.state_dict())
         best_elo = new_elo
-        torch.save(best_model.state_dict(), "best_model.pth")
+        torch.save(best_model.state_dict(), "../models/best_model.pth")
     else:
         print("Model rejected")
 
-    torch.save(new_model.state_dict(), "latest_model.pth")
+    torch.save(new_model.state_dict(), "../models/latest_model.pth")

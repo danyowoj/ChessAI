@@ -10,7 +10,7 @@ _device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 _model = AlphaZeroNet().to(_device)
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
-model_path = os.path.join(current_dir, "dany_chess_trained.pth")
+model_path = os.path.join(current_dir, "../models/dany_chess_trained.pth")
 
 if os.path.exists(model_path):
     print("Loading trained model...")

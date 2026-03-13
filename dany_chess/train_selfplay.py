@@ -40,4 +40,4 @@ for epoch in range(EPOCHS):
 
         print("Loss: ", loss)
 
-    torch.save(model.state_dict(), "dany_chess_trained.pth")
+    torch.save(model.state_dict(), "../models/dany_chess_trained.pth")
