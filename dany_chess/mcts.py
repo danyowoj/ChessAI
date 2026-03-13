@@ -1,8 +1,8 @@
 import chess
 import torch
 
-from .node import Node
-from .infer import evaluate
+from dany_chess.node import Node
+from dany_chess.infer import evaluate
 
 
 class MCTS:
@@ -10,13 +10,13 @@ class MCTS:
     Реализация Monte Carlo Tree Search (AlphaZero-style).
     """
 
-    def __init__(self, model, device, simulations=100, c_puct=1.4):
+    def __init__(self, model, device, simulations=30, c_puct=1.4):
         self.model = model
         self.device = device
         self.simulations = simulations
         self.c_puct = c_puct
 
-    def run(self, board):
+    def run(self, board, temperature=1.0, add_noise=True):
         """
         Запускает MCTS из текущей позиции.
 
@@ -27,42 +27,56 @@ class MCTS:
 
         root = Node()
 
-        # Первичная оценка
         policy, _ = evaluate(self.model, board, self.device)
         root.expand(policy)
 
+        # Dirichlet noise
+        if add_noise:
+            moves = list(root.children.keys())
+            noise = torch.distributions.Dirichlet(
+                torch.ones(len(moves)) * 0.3
+            ).sample()
+
+            for i, move in enumerate(moves):
+                root.children[move].P = (
+                        0.75 * root.children[move].P + 0.25 * noise[i]
+                )
+
         for _ in range(self.simulations):
             node = root
-            scratch_board = board.copy()
+            scratch = board.copy()
 
-            # Selection
             while not node.is_leaf():
                 move, node = node.select_child(self.c_puct)
-                scratch_board.push(move)
+                scratch.push(move)
 
-            # Evaluation
-            policy, value = evaluate(self.model, scratch_board, self.device)
+            policy, value = evaluate(self.model, scratch, self.device)
 
-            # Expansion
-            if not scratch_board.is_game_over():
+            if not scratch.is_game_over():
                 node.expand(policy)
 
-            # Backpropagation
-            self.backpropagate(node, value, scratch_board.turn)
+            self.backpropagate(node, value, scratch.turn)
 
-        # === Формируем policy target ===
+        # === Policy target ===
         policy_target = torch.zeros(4672)
+        moves = list(root.children.keys())
+        visits = torch.tensor([root.children[m].N for m in moves], dtype=torch.float32)
 
-        total_visits = sum(child.N for child in root.children.values())
+        if temperature == 0:
+            best_move = moves[visits.argmax().item()]
+            policy_target[self.move_to_index(best_move)] = 1.0
+            return best_move, policy_target
 
-        for move, child in root.children.items():
-            move_index = self.move_to_index(move)
-            policy_target[move_index] = child.N / total_visits
+        visits = visits ** (1 / temperature)
+        probs = visits / visits.sum()
 
-        # Лучший ход
-        best_move = max(root.children.items(), key=lambda item: item[1].N)[0]
+        for i, move in enumerate(moves):
+            idx = self.move_to_index(move)
+            policy_target[idx] = probs[i]
 
-        return best_move, policy_target
+        chosen_move = moves[torch.multinomial(probs, 1).item()]
+
+        return chosen_move, policy_target
 
     def backpropagate(self, node, value, turn):
         """

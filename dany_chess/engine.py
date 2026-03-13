@@ -2,13 +2,11 @@ import torch
 import chess
 import os
 
-from .model import AlphaZeroNet
-from .mcts import MCTS
-
+from dany_chess.model import AlphaZeroNet
+from dany_chess.mcts import MCTS
 
 # Инициализация модели
 _device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
 _model = AlphaZeroNet().to(_device)
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -31,12 +29,12 @@ def best_move(fen: str) -> chess.Move:
     Основная функция движка.
     Использует MCTS для выбора хода.
     """
-
     board = chess.Board(fen)
 
     if board.is_game_over():
         return None
 
-    move, _ = _mcts.run(board)
+    # Используем детерминированный выбор
+    move, _ = _mcts.run(board, temperature=0, add_noise=False)
 
     return move

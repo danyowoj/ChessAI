@@ -24,8 +24,9 @@ for epoch in range(EPOCHS):
     print(f"\n=== EPOCH {epoch} ===")
 
     # Self-play
-    for _ in range(GAMES_PER_EPOCH):
-        data = play_selfplay_game()
+    for i in range(GAMES_PER_EPOCH):
+        print(f"Self-play game {i + 1}/{GAMES_PER_EPOCH}")
+        data = play_selfplay_game(model, device)
         for sample in data:
             buffer.add(sample)
 

@@ -1,7 +1,6 @@
 import torch
 import chess
-from .encoder import board_to_tensor
-
+from dany_chess.encoder import board_to_tensor
 
 @torch.no_grad()
 def evaluate(model, board, device):
@@ -12,21 +11,24 @@ def evaluate(model, board, device):
     - policy: dict(move -> probability)
     - value: оценка позиции [-1, 1]
     """
-
     x = board_to_tensor(board).unsqueeze(0).to(device)
     policy_logits, value = model(x)
 
-    policy_logits = policy_logits.squeeze(0)
+    policy_logits = policy_logits.squeeze(0)  # [4672]
+    value = value.item()
 
-    policy = {}
     legal_moves = list(board.legal_moves)
-
     if not legal_moves:
-        return policy, value.item()
+        return {}, value
 
-    probs = torch.softmax(policy_logits[:len(legal_moves)], dim=0)
+    # Собираем индексы и логиты для легальных ходов
+    move_indices = [move.from_square * 64 + move.to_square for move in legal_moves]
+    legal_logits = policy_logits[move_indices]  # берём логиты по индексам
 
-    for move, p in zip(legal_moves, probs):
-        policy[move] = p.item()
+    # Softmax только по легальным ходам
+    probs = torch.softmax(legal_logits, dim=0)
 
-    return policy, value.item()
+    # Формируем словарь move -> вероятность
+    policy = {move: prob.item() for move, prob in zip(legal_moves, probs)}
+
+    return policy, value
