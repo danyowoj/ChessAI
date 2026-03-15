@@ -1,8 +1,6 @@
 import random
 
-
 class ReplayBuffer:
-
     def __init__(self, max_size=50000):
         self.max_size = max_size
         self.buffer = []
@@ -10,7 +8,6 @@ class ReplayBuffer:
     def add(self, sample):
         if len(self.buffer) >= self.max_size:
             self.buffer.pop(0)
-
         self.buffer.append(sample)
 
     def sample(self, batch_size):

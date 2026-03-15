@@ -1,6 +1,9 @@
 import torch
 import chess
 from dany_chess.encoder import board_to_tensor
+from dany_chess.move_mask import create_legal_move_mask, move_to_index
+
+INF = 1e9 # олшое число для зануления нелегальных ходов
 
 @torch.no_grad()
 def evaluate(model, board, device):
@@ -17,18 +20,16 @@ def evaluate(model, board, device):
     policy_logits = policy_logits.squeeze(0)  # [4672]
     value = value.item()
 
+    mask = create_legal_move_mask(board, device=device)
+    # Вычитаем INF из нелегальных логитов
+    masked_logits = policy_logits + (mask - 1) * INF
+    probs = torch.softmax(masked_logits, dim=0)
+
+    # Формируем словарь только для легальных ходов (для удобства MCTS)
     legal_moves = list(board.legal_moves)
-    if not legal_moves:
-        return {}, value
-
-    # Собираем индексы и логиты для легальных ходов
-    move_indices = [move.from_square * 64 + move.to_square for move in legal_moves]
-    legal_logits = policy_logits[move_indices]  # берём логиты по индексам
-
-    # Softmax только по легальным ходам
-    probs = torch.softmax(legal_logits, dim=0)
-
-    # Формируем словарь move -> вероятность
-    policy = {move: prob.item() for move, prob in zip(legal_moves, probs)}
+    policy = {}
+    for move in legal_moves:
+        idx = move_to_index(move)
+        policy[move] = probs[idx].item()
 
     return policy, value

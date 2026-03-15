@@ -1,3 +1,4 @@
+import chess
 from flask import Flask, render_template, request, jsonify
 import time
 import random
@@ -15,26 +16,32 @@ def index():
 @app.route('/playmove', methods=['POST'])
 def playmove():
     try:
-        # Получаем данные от клиента
         data = request.get_json()
         fen = data.get('fen')
 
         if not fen:
             return jsonify({'error': 'FEN not provided'}), 400
 
-        # Небольшая случайная задержка (имитация "размышления" ИИ)
+        # Валидация FEN
+        try:
+            board = chess.Board(fen)
+        except ValueError as e:
+            return jsonify({'error': f'Invalid FEN: {str(e)}'}), 400
+
+        # Проверка, что игра не закончена
+        if board.is_game_over():
+            return jsonify({'error': 'Game is already over'}), 200
+
+        # Небольшая случайная задержка
         delay = random.uniform(0.1, 1.0)
         time.sleep(delay)
 
-        # Получаем лучший ход от движка
         move = best_move(fen)
 
         if move is None:
             return jsonify({'error': 'Нет доступных ходов (мат или пат)'}), 200
 
         print(f"FEN: {fen} | AI move: {move.uci()} | delay: {delay:.3f}s")
-
-        # Возвращаем ход в формате UCI
         return jsonify({"bestmove": move.uci()})
 
     except Exception as e:

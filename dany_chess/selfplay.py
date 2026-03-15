@@ -2,12 +2,13 @@ import chess
 import torch
 from dany_chess.encoder import board_to_tensor
 from dany_chess.mcts import MCTS
+from dany_chess.move_mask import create_legal_move_mask
 
 def play_selfplay_game(model, device, simulations=200):
     board = chess.Board()
     mcts = MCTS(model, device, simulations)
 
-    history = []
+    history = []  # каждый элемент: (state, policy, mask, turn)
     move_count = 0
 
     while not board.is_game_over():
@@ -18,7 +19,8 @@ def play_selfplay_game(model, device, simulations=200):
             add_noise=True
         )
         state = board_to_tensor(board)
-        history.append((state, policy, board.turn))
+        mask = create_legal_move_mask(board)  # тензор [4672]
+        history.append((state, policy, mask, board.turn))
         board.push(move)
         move_count += 1
 
@@ -26,7 +28,7 @@ def play_selfplay_game(model, device, simulations=200):
 
     # Определяем value для каждой позиции с учётом цвета
     data = []
-    for state, policy, turn in history:
+    for state, policy, mask, turn in history:
         if result == "1-0":
             value = 1.0 if turn == chess.WHITE else -1.0
         elif result == "0-1":
@@ -34,6 +36,6 @@ def play_selfplay_game(model, device, simulations=200):
         else:
             value = 0.0
 
-        data.append((state, policy, torch.tensor([value], dtype=torch.float32)))
+        data.append((state, policy, mask, torch.tensor([value], dtype=torch.float32)))
 
     return data

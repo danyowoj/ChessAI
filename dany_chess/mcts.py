@@ -1,9 +1,8 @@
 import chess
 import torch
-
 from dany_chess.node import Node
 from dany_chess.infer import evaluate
-
+from dany_chess.move_mask import move_to_index
 
 class MCTS:
     """
@@ -64,14 +63,14 @@ class MCTS:
 
         if temperature == 0:
             best_move = moves[visits.argmax().item()]
-            policy_target[self.move_to_index(best_move)] = 1.0
+            policy_target[move_to_index(best_move)] = 1.0
             return best_move, policy_target
 
         visits = visits ** (1 / temperature)
         probs = visits / visits.sum()
 
         for i, move in enumerate(moves):
-            idx = self.move_to_index(move)
+            idx = move_to_index(move)
             policy_target[idx] = probs[i]
 
         chosen_move = moves[torch.multinomial(probs, 1).item()]
@@ -86,9 +85,3 @@ class MCTS:
             node.update(value if turn else -value)
             node = node.parent
             value = -value
-
-    def move_to_index(selfself, move):
-        """
-        Преобразование хода в индекс policy-вектора.
-        """
-        return move.from_square * 64 + move.to_square
