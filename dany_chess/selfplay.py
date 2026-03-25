@@ -4,26 +4,23 @@ from dany_chess.encoder import board_to_tensor
 from dany_chess.mcts import MCTS
 from dany_chess.move_mask import create_legal_move_mask, move_to_index
 
-def play_selfplay_game(model, device, simulations=200):
+def play_selfplay_game(model, device, simulations=200, batch_size=16):
     board = chess.Board()
-    mcts = MCTS(model, device, simulations)
+    mcts = MCTS(model, device, simulations, batch_size=batch_size)
 
-    history = []  # (state, policy, mask, turn)
+    history = []
     move_count = 0
-    root = None  # корень для reuse
+    root = None
 
     while not board.is_game_over():
         temperature = 1.0 if move_count < 20 else 0.1
-        add_noise = (move_count == 0)  # шум только в начале игры (первый ход)
+        add_noise = (move_count == 0)
 
-        # Выполняем поиск с возможным reuse корня
         root, _ = mcts.search(board, root=root, add_noise=add_noise)
 
-        # Сохраняем состояние ДО хода
         state = board_to_tensor(board)
         mask = create_legal_move_mask(board)
 
-        # Получаем детей и посещения
         moves = list(root.children.keys())
         visits = torch.tensor([root.children[m].N for m in moves], dtype=torch.float32)
 
@@ -34,28 +31,20 @@ def play_selfplay_game(model, device, simulations=200):
             visits = visits ** (1 / temperature)
             probs = visits / (visits.sum() + 1e-8)
 
-        # Выбираем ход стохастически
         chosen_idx = torch.multinomial(probs, 1).item()
         chosen_move = moves[chosen_idx]
 
-        # Формируем policy вектор для обучения (вероятности после температуры)
         policy = torch.zeros(4672)
         for i, move in enumerate(moves):
             idx = move_to_index(move)
             policy[idx] = probs[i]
 
-        # Сохраняем данные
         history.append((state, policy, mask, board.turn))
-
-        # Делаем ход на доске
         board.push(chosen_move)
         move_count += 1
-
-        # Обновляем корень для следующей итерации:
-        # берём дочерний узел, соответствующий выбранному ходу
         root = root.children[chosen_move]
 
-    # Обработка результата
+    # Result processing (same as before)
     result = board.result()
     data = []
     for state, policy, mask, turn in history:
@@ -66,5 +55,4 @@ def play_selfplay_game(model, device, simulations=200):
         else:
             value = 0.0
         data.append((state, policy, mask, torch.tensor([value], dtype=torch.float32)))
-
     return data
