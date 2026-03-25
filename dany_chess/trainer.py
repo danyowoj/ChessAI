@@ -15,23 +15,27 @@ def train_step(model, optimizer, batch, device):
 
     pred_policy_logits, pred_value = model(states)  # [batch, 4672], [batch, 1]
 
-    # Применяем маску к логитам
+    # Маскируем логиты: для нелегальных ходов вычитаем INF
     masked_logits = pred_policy_logits + (masks - 1) * INF
 
-    # Предсказанные вероятности после маски
+    # Вероятности после softmax (легальные ходы получают ненулевые вероятности)
     pred_probs = F.softmax(masked_logits, dim=-1)
+    log_probs = torch.log(pred_probs + EPS)  # добавляем эпсилон для численной стабильности
 
-    # KL-div: sum(target * log(target / pred))
-    # Лучше использовать log_pred и target с небольшим эпсилоном для численной стабильности
-    log_pred_probs = torch.log(pred_probs + EPS)
-    policy_loss = F.kl_div(log_pred_probs, target_policy, reduction='batchmean')
+    # Policy loss: кросс-энтропия с целевым распределением
+    policy_loss = -(target_policy * log_probs).sum(dim=-1).mean()
 
+    # Value loss: MSE
     value_loss = F.mse_loss(pred_value, target_value)
 
     loss = policy_loss + value_loss
 
     optimizer.zero_grad()
     loss.backward()
+
+    # Gradient clipping для предотвращения взрывных градиентов
+    torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+
     optimizer.step()
 
     return loss.item()
