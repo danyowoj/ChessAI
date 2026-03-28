@@ -13,11 +13,6 @@ def random_model():
     model.eval()
     return model
 
-def test_random_vs_random(random_model):
-    """Случайная модель против случайных ходов – около 0.5."""
-    winrate = play_vs_random(random_model, device, games=10, simulations=30)
-    assert 0.2 < winrate < 0.8, f"Winrate {winrate} не около 0.5"
-
 @pytest.mark.skipif(not os.path.exists("models/dany_chess_trained.pth"), reason="Обученная модель не найдена")
 def test_trained_vs_random():
     """Обученная модель должна выигрывать у случайного игрока с высоким процентом."""

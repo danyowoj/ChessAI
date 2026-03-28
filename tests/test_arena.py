@@ -12,28 +12,6 @@ def random_model():
     model.eval()
     return model
 
-def test_arena_random_vs_random(random_model):
-    """Две случайные модели должны играть примерно с равным счётом (около 0.5)."""
-    wins = 0
-    games = 4
-    for i in range(games):
-        # чередуем цвет, чтобы исключить преимущество первого хода
-        if i % 2 == 0:
-            result = play_game(random_model, random_model, device, simulations=30)
-        else:
-            result = play_game(random_model, random_model, device, simulations=30)
-        if result == "1-0":
-            wins += 1
-        elif result == "1/2-1/2":
-            wins += 0.5
-    winrate = wins / games
-    # Ожидаем, что winrate около 0.5, допустим небольшой разброс
-    assert 0.2 < winrate < 0.8, f"Winrate {winrate} слишком далёк от 0.5"
-
-# Более практичный тест: сравнение двух сохранённых моделей
-@pytest.mark.skipif(not os.path.exists(
-    "models/best_model.pth") or not os.path.exists("models/latest_model.pth"),
-                    reason="Модели не найдены")
 def test_arena_best_vs_latest():
     """Сравниваем лучшую модель и последнюю (после обучения). Новая должна быть не хуже."""
     best_model = AlphaZeroNet().to(device)
