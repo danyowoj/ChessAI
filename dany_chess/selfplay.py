@@ -44,7 +44,6 @@ def play_selfplay_game(model, device, simulations=200, batch_size=16):
         move_count += 1
         root = root.children[chosen_move]
 
-    # Result processing (same as before)
     result = board.result()
     data = []
     for state, policy, mask, turn in history:
