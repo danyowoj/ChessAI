@@ -2,8 +2,7 @@ import torch
 import chess
 import time
 from dany_chess.mcts import MCTS
-from dany_chess.encoder import board_to_tensor
-from dany_chess.move_mask import create_legal_move_mask, move_to_index
+from dany_chess.move_mask import move_to_index
 
 class ParallelSelfPlay:
     def __init__(self, model, device, num_games, simulations=200, batch_size=32, c_puct=1.4, verbose=True):
@@ -25,7 +24,7 @@ class ParallelSelfPlay:
                 'mcts': MCTS(self.model, self.device, self.simulations, self.c_puct, batch_size=1),
                 'root': None,
                 'move_count': 0,
-                'history': []
+                'history': []   # теперь храним (fen, policy, turn)
             }
             self.games.append(game)
 
@@ -43,7 +42,6 @@ class ParallelSelfPlay:
         total_simulations = 0
         last_report = time.time()
 
-        # Основной цикл
         while active_indices:
             # Сбор листьев для оценки
             leaves = []
@@ -53,7 +51,6 @@ class ParallelSelfPlay:
                 root = game['root']
                 mcts = game['mcts']
 
-                # Selection
                 node = root
                 scratch = board.copy()
                 while not node.is_leaf():
@@ -61,16 +58,14 @@ class ParallelSelfPlay:
                     scratch.push(move)
                 leaves.append((idx, node, scratch.copy(), scratch.turn))
 
-                # Если набрали достаточно листьев – оцениваем
                 if len(leaves) >= self.batch_size:
                     self._evaluate_batch(leaves)
                     leaves = []
 
-            # Оцениваем оставшиеся листья
             if leaves:
                 self._evaluate_batch(leaves)
 
-            # Теперь после всех симуляций выбираем ходы и обновляем игры
+            # Выбор ходов
             new_active = []
             for idx in active_indices:
                 game = self.games[idx]
@@ -99,9 +94,8 @@ class ParallelSelfPlay:
                 for i, move in enumerate(moves):
                     policy[move_to_index(move)] = probs[i]
 
-                state = board_to_tensor(board)
-                mask = create_legal_move_mask(board)
-                game['history'].append((state, policy, mask, board.turn))
+                # Сохраняем FEN, policy и turn
+                game['history'].append((board.fen(), policy, board.turn))
 
                 board.push(chosen_move)
                 game['move_count'] += 1
@@ -113,7 +107,6 @@ class ParallelSelfPlay:
             total_simulations += self.simulations * len(active_indices)
             active_indices = new_active
 
-            # Логирование прогресса
             if self.verbose and time.time() - last_report > 2.0:
                 elapsed = time.time() - start_time
                 games_finished = self.num_games - len(active_indices)
@@ -124,22 +117,21 @@ class ParallelSelfPlay:
                 last_report = time.time()
 
         if self.verbose:
-            print()  # новая строка после прогресс-бара
+            print()
             print(f"✅ All games finished in {time.time() - start_time:.1f}s")
 
-        # Преобразование историй в обучающие данные
         all_data = []
         for game in self.games:
             board = game['board']
             result = board.result()
-            for state, policy, mask, turn in game['history']:
+            for fen, policy, turn in game['history']:
                 if result == "1-0":
                     value = 1.0 if turn == chess.WHITE else -1.0
                 elif result == "0-1":
                     value = 1.0 if turn == chess.BLACK else -1.0
                 else:
                     value = 0.0
-                all_data.append((state, policy, mask, torch.tensor([value], dtype=torch.float32)))
+                all_data.append((fen, policy, torch.tensor([value], dtype=torch.float32)))
         return all_data
 
     def _evaluate_batch(self, leaves):
@@ -147,6 +139,7 @@ class ParallelSelfPlay:
             return
 
         boards = [leaf[2] for leaf in leaves]
+        from dany_chess.encoder import board_to_tensor
         states = torch.stack([board_to_tensor(b) for b in boards]).to(self.device)
 
         policy_logits, values = self.model(states)
@@ -155,6 +148,7 @@ class ParallelSelfPlay:
             logits = policy_logits[i]
             value = values[i].item()
 
+            from dany_chess.move_mask import create_legal_move_mask
             mask = create_legal_move_mask(board, device=self.device)
             masked_logits = logits + (mask - 1) * 1e9
             probs = torch.softmax(masked_logits, dim=0)

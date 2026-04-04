@@ -14,12 +14,12 @@ def main():
 
     buffer = ReplayBuffer(max_size=200000)
 
-    EPOCHS = 16
-    GAMES_PER_EPOCH = 32
-    SIMULATIONS = 500
-    BATCH_EVAL_SIZE = 64
-    BATCH_SIZE = 64
-    TRAIN_STEPS_PER_EPOCH = 1000
+    EPOCHS = 2**7
+    GAMES_PER_EPOCH = 2**5
+    SIMULATIONS = 2**9
+    BATCH_EVAL_SIZE = 2**7
+    BATCH_SIZE = 2**6
+    TRAIN_STEPS_PER_EPOCH = 2**10
 
     for epoch in range(EPOCHS):
         print(f"\n{'='*50}")
