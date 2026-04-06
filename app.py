@@ -5,6 +5,7 @@ import random
 
 from chess_ai import best_move
 
+print("Testing engine: ", best_move("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"))
 app = Flask(__name__, static_folder='static', template_folder='.')
 
 
