@@ -17,18 +17,17 @@ def main():
     model_path = "dany_chess_trained.pth"
 
     if os.path.exists(model_path):
-        print(f"⚠️ Found existing model at {model_path}. Attempting to load...")
-        try:
-            model.load_state_dict(torch.load(model_path, map_location=device))
-            print("✅ Model loaded successfully.")
-        except RuntimeError as e:
-            print(f"❌ Failed to load model: {e}")
-            print("🔄 Renaming old model and starting from random initialization.")
-            backup_path = model_path + ".incompatible"
-            shutil.move(model_path, backup_path)
-            print(f"   Old model moved to {backup_path}")
+        print(f"Loading trained model from {model_path}")
+        model.load_state_dict(torch.load(model_path))
+        print("✅ Model loaded successfully.")
     else:
-        print("⚠️ No saved model found, starting from random initialization.")
+        pretrained_path = "dany_chess_pretrained.pth"
+        if os.path.exists(pretrained_path):
+            print(f"Loading pretrained model from {pretrained_path}")
+            model.load_state_dict(torch.load(pretrained_path))
+            print("✅ Pretrained model loaded successfully.")
+        else:
+            print("⚠️ No saved model found, starting from random initialization.")
 
     optimizer = optim.AdamW(model.parameters(), lr=1e-4, weight_decay=1e-4)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=5)
@@ -36,12 +35,12 @@ def main():
     buffer = ReplayBuffer(max_size=500000)
 
     # Гиперпараметры
-    EPOCHS = 100 #500
-    GAMES_PER_EPOCH = 32 #128
-    SIMULATIONS = 800
-    BATCH_EVAL_SIZE = 128
-    BATCH_SIZE = 128
-    TRAIN_STEPS_PER_EPOCH = 2000
+    EPOCHS = 20                 #500
+    GAMES_PER_EPOCH = 32         #128
+    SIMULATIONS = 400            #1000
+    BATCH_EVAL_SIZE = 128        #256
+    BATCH_SIZE = 128             #256
+    TRAIN_STEPS_PER_EPOCH = 250 #2000
 
     for epoch in range(EPOCHS):
         print(f"\n{'='*50}")
