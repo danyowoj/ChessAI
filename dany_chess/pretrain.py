@@ -13,9 +13,9 @@ def main():
     optimizer = optim.AdamW(model.parameters(), lr=1e-4, weight_decay=1e-4)
 
     # Загружаем датасет (можно ограничить количество примеров для теста)
-    dataset = ChessAlphaDataset(split='train', max_samples=1280)  # max_samples=None
-    batch_size = 128
-    num_epochs = 10   # для предобучения достаточно 5-10 эпох
+    dataset = ChessAlphaDataset(split='train', max_samples=6400)  # max_samples=None
+    batch_size = 256
+    num_epochs = 20   # для предобучения достаточно 5-10 эпох
 
     # Индексы для батчей
     num_samples = len(dataset)

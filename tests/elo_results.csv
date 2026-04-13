@@ -1,0 +1,3 @@
+timestamp,stockfish_elo,winrate,wins,total,model_passed,final_elo
+2026-04-09T21:47:24.697990,300,0.250,2.5,10,False,300
+2026-04-13T09:26:02.928673,300,0.000,0.0,10,False,300

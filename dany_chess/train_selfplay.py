@@ -35,12 +35,12 @@ def main():
     buffer = ReplayBuffer(max_size=500000)
 
     # Гиперпараметры
-    EPOCHS = 20                 #500
-    GAMES_PER_EPOCH = 32         #128
-    SIMULATIONS = 400            #1000
-    BATCH_EVAL_SIZE = 128        #256
-    BATCH_SIZE = 128             #256
-    TRAIN_STEPS_PER_EPOCH = 250 #2000
+    EPOCHS = 100                #500
+    GAMES_PER_EPOCH = 64        #128
+    SIMULATIONS = 800           #1000
+    BATCH_EVAL_SIZE = 256       #256
+    BATCH_SIZE = 256            #256
+    TRAIN_STEPS_PER_EPOCH = 500 #2000
 
     for epoch in range(EPOCHS):
         print(f"\n{'='*50}")
