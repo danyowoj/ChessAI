@@ -2,7 +2,7 @@ Flask
 chess
 torch
 numpy
-reauests
+requests
 datasets
 tqdm
 python-chess
