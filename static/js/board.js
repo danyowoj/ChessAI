@@ -3,7 +3,7 @@ let game = new Chess();
 let pendingPromotion = null;
 let playerColor = 'w';
 let hasMoved = false;
-const moveSound = new Audio('/static/sounds/move.mp3');
+const moveSound = new Audio('static/sounds/move.mp3');
 let lastMoveSquares = [];
 let currentSuggestion = null;
 
