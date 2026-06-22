@@ -1,6 +1,7 @@
-chess
-flask~=3.1.1
-torch
-datasets
-tqdm
-python-chess
+Flask==2.3.3
+chess==1.10.0
+torch==2.3.0
+numpy==1.24.4
+requests==2.31.0
+tqdm==4.66.1
+gunicorn==21.2.0
