@@ -1,9 +1,7 @@
-Flask
+flask
 chess
 torch
 numpy
 requests
-datasets
 tqdm
-python-chess
 gunicorn
